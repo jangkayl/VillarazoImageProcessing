@@ -24,7 +24,6 @@ namespace WebCamLib
 		private const int SWP_NOZORDER = 0x40;
 		private const int HWND_BOTTOM = 1;
 		
-		
 	//	[DllImport("inpout32.dll", EntryPoint="Out32")]
 	//	public static extern void Output(int adress, int value);
 		
@@ -102,7 +101,7 @@ namespace WebCamLib
         /// </summary>
         /// <param name="windowsControl">Control to attach the webcam preview</param>
         ///                    global::  
-        public void ShowWindow(System.Windows.Forms.Control windowsControl )
+        public void ShowWindow(System.Windows.Forms.Control windowsControl)
         {
             Init(windowsControl.Height, windowsControl.Width , windowsControl.Handle.ToInt32());                        
         }

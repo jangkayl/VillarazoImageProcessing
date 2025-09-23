@@ -14,6 +14,7 @@ namespace WebCamLib
 	//	public static extern int Input(int adress);
 		
         [DllImport("avicap32.dll")]
+
         protected static extern bool capGetDriverDescriptionA(short wDriverIndex,
             [MarshalAs(UnmanagedType.VBByRefStr)]ref String lpszName,
            int cbName, [MarshalAs(UnmanagedType.VBByRefStr)] ref String lpszVer, int cbVer);

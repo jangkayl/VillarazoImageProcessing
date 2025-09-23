@@ -1,16 +1,22 @@
+﻿using AForge.Video;
+using AForge.Video.DirectShow;
+
 namespace VillarazoImageProcessing
 {
     public partial class Form1 : Form
     {
-        Bitmap imageA, imageB, colorgreen;
+        Bitmap imageA, imageB;
         bool isSubtractionMode = false;
+
+        private FilterInfoCollection videoDevices;
+        private VideoCaptureDevice videoSource;
+
         public Form1()
         {
             InitializeComponent();
             this.Size = new Size(713, 406);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
-
         }
 
         private bool isNoImageA()
@@ -28,8 +34,59 @@ namespace VillarazoImageProcessing
             return false;
         }
 
+        private void useCameraToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+
+                if (videoDevices.Count == 0)
+                {
+                    MessageBox.Show("No camera found on this device!", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
+                videoSource.NewFrame += new NewFrameEventHandler(videoSource_NewFrame);
+
+                videoSource.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error starting camera: " + ex.Message,
+                    "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void videoSource_NewFrame(object sender, NewFrameEventArgs eventArgs)
+        {
+            Bitmap frame = (Bitmap)eventArgs.Frame.Clone();
+
+            pictureBox1.Image = frame;
+
+            imageA = (Bitmap)frame.Clone();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (videoSource != null && videoSource.IsRunning)
+            {
+                videoSource.SignalToStop();
+                videoSource.WaitForStop();
+            }
+            base.OnFormClosing(e);
+        }
+
         private void loadImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (videoSource != null && videoSource.IsRunning)
+            {
+                videoSource.SignalToStop();
+                videoSource.WaitForStop();
+                videoSource = null;
+            }
+
             OpenFileDialog openFileDialog = new OpenFileDialog();
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
@@ -47,6 +104,44 @@ namespace VillarazoImageProcessing
                 pictureBox2.Image = imageB;
             }
         }
+
+        private void clearImageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (videoSource != null && videoSource.IsRunning)
+            {
+                videoSource.SignalToStop();
+                videoSource.WaitForStop();
+                videoSource = null;
+            }
+
+            if (pictureBox1.Image != null)
+            {
+                pictureBox1.Image.Dispose();
+                pictureBox1.Image = null;
+            }
+            if (pictureBox2.Image != null)
+            {
+                pictureBox2.Image.Dispose();
+                pictureBox2.Image = null;
+            }
+            if (pictureBox3.Image != null)
+            {
+                pictureBox3.Image.Dispose();
+                pictureBox3.Image = null;
+            }
+
+            imageA = null;
+            imageB = null;
+
+            isSubtractionMode = false;
+
+            this.Size = new Size(713, 406);
+            imageSubtractionToolStripMenuItem.Text = "Image Subtraction";
+
+            MessageBox.Show("All images cleared.", "Clear",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
 
         private void basicCopyToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -174,17 +269,25 @@ namespace VillarazoImageProcessing
                 return;
             }
 
+
             Bitmap resizedBackground = new Bitmap(imageB, imageA.Width, imageA.Height);
             Bitmap resultImage = new Bitmap(imageA.Width, imageA.Height);
-
             for (int x = 0; x < imageA.Width; x++)
             {
                 for (int y = 0; y < imageA.Height; y++)
                 {
                     Color pixel = imageA.GetPixel(x, y);
 
-                    // Detect green
-                    bool isGreen = pixel.G > 90 && pixel.G > pixel.R + 40 && pixel.G > pixel.B + 40;
+                    // Convert RGB to Hue
+                    float hue = pixel.GetHue();        // 0–360
+                    float sat = pixel.GetSaturation(); // 0–1
+                    float bri = pixel.GetBrightness(); // 0–1
+
+                    //  Detect green (light or dark)
+                    bool isGreen =
+                        hue >= 50 && hue <= 160 &&   // Hue range for green
+                        sat > 0.2 &&                 // needs some saturation
+                        bri > 0.2;                   // not too dark
 
                     if (isGreen)
                     {
@@ -200,5 +303,40 @@ namespace VillarazoImageProcessing
             pictureBox3.Image = resultImage;
         }
 
+        private void processedImageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox2.Image == null)
+            {
+                MessageBox.Show("No featured image to save!", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
+            saveFileDialog.Title = "Save Featured Image";
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                pictureBox2.Image.Save(saveFileDialog.FileName);
+            }
+        }
+
+        private void finalOutputToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox3.Image == null)
+            {
+                MessageBox.Show("No subtracted image to save!", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp";
+            saveFileDialog.Title = "Save Subtracted Image";
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                pictureBox3.Image.Save(saveFileDialog.FileName);
+            }
+        }
     }
 }
