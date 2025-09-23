@@ -3,9 +3,14 @@ namespace VillarazoImageProcessing
     public partial class Form1 : Form
     {
         Bitmap imageA, imageB, colorgreen;
+        bool isSubtractionMode = false;
         public Form1()
         {
             InitializeComponent();
+            this.Size = new Size(713, 406);
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+
         }
 
         private bool isNoImageA()
@@ -23,7 +28,7 @@ namespace VillarazoImageProcessing
             return false;
         }
 
-        private void btnLoadImage_Click(object sender, EventArgs e)
+        private void loadImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -140,5 +145,60 @@ namespace VillarazoImageProcessing
             }
             pictureBox2.Image = imageB;
         }
+
+        private void imageSubtractionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!isSubtractionMode)
+            {
+                isSubtractionMode = true;
+                imageSubtractionToolStripMenuItem.Text = "Back to Features";
+                this.Size = new Size(713, 815);
+            }
+            else
+            {
+                isSubtractionMode = false;
+                imageSubtractionToolStripMenuItem.Text = "Image Subtraction";
+                this.Size = new Size(713, 406);
+            }
+        }
+
+        private void btnSubtract_Click(object sender, EventArgs e)
+        {
+            if (imageA == null || imageB == null)
+            {
+                MessageBox.Show(this,
+                    "Both images must be loaded. Please load both images first!",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            Bitmap resizedBackground = new Bitmap(imageB, imageA.Width, imageA.Height);
+            Bitmap resultImage = new Bitmap(imageA.Width, imageA.Height);
+
+            for (int x = 0; x < imageA.Width; x++)
+            {
+                for (int y = 0; y < imageA.Height; y++)
+                {
+                    Color pixel = imageA.GetPixel(x, y);
+
+                    // Detect green
+                    bool isGreen = pixel.G > 90 && pixel.G > pixel.R + 40 && pixel.G > pixel.B + 40;
+
+                    if (isGreen)
+                    {
+                        resultImage.SetPixel(x, y, resizedBackground.GetPixel(x, y));
+                    }
+                    else
+                    {
+                        resultImage.SetPixel(x, y, pixel);
+                    }
+                }
+            }
+
+            pictureBox3.Image = resultImage;
+        }
+
     }
 }

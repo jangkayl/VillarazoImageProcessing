@@ -31,15 +31,20 @@
             pictureBox1 = new PictureBox();
             pictureBox2 = new PictureBox();
             pictureBox3 = new PictureBox();
-            button1 = new Button();
-            button2 = new Button();
-            menuStrip1 = new MenuStrip();
+            loadImageToolStripMenuItem = new ToolStripMenuItem();
+            loadImageToolStripMenuItem1 = new ToolStripMenuItem();
+            saveImageToolStripMenuItem = new ToolStripMenuItem();
+            clearImageToolStripMenuItem = new ToolStripMenuItem();
             featuresToolStripMenuItem = new ToolStripMenuItem();
             basicCopyToolStripMenuItem = new ToolStripMenuItem();
             greyscaleToolStripMenuItem = new ToolStripMenuItem();
             colorInversionToolStripMenuItem = new ToolStripMenuItem();
             histogramToolStripMenuItem = new ToolStripMenuItem();
             sepiaToolStripMenuItem = new ToolStripMenuItem();
+            imageSubtractionToolStripMenuItem = new ToolStripMenuItem();
+            menuStrip1 = new MenuStrip();
+            button1 = new Button();
+            loadBackgroundToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
@@ -48,118 +53,152 @@
             // 
             // pictureBox1
             // 
-            pictureBox1.Location = new Point(23, 133);
+            pictureBox1.Location = new Point(25, 41);
+            pictureBox1.Margin = new Padding(3, 2, 3, 2);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(341, 341);
+            pictureBox1.Size = new Size(315, 315);
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
             // 
             // pictureBox2
             // 
-            pictureBox2.Location = new Point(380, 133);
+            pictureBox2.Location = new Point(358, 41);
+            pictureBox2.Margin = new Padding(3, 2, 3, 2);
             pictureBox2.Name = "pictureBox2";
-            pictureBox2.Size = new Size(341, 341);
+            pictureBox2.Size = new Size(315, 315);
             pictureBox2.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox2.TabIndex = 1;
             pictureBox2.TabStop = false;
             // 
             // pictureBox3
             // 
-            pictureBox3.Location = new Point(745, 133);
+            pictureBox3.Location = new Point(191, 443);
+            pictureBox3.Margin = new Padding(3, 2, 3, 2);
             pictureBox3.Name = "pictureBox3";
-            pictureBox3.Size = new Size(341, 341);
+            pictureBox3.Size = new Size(315, 315);
             pictureBox3.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox3.TabIndex = 2;
             pictureBox3.TabStop = false;
             // 
-            // button1
+            // loadImageToolStripMenuItem
             // 
-            button1.Location = new Point(23, 35);
-            button1.Name = "button1";
-            button1.Size = new Size(104, 29);
-            button1.TabIndex = 3;
-            button1.Text = "load image";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += btnLoadImage_Click;
+            loadImageToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { loadImageToolStripMenuItem1, loadBackgroundToolStripMenuItem, saveImageToolStripMenuItem, clearImageToolStripMenuItem });
+            loadImageToolStripMenuItem.Name = "loadImageToolStripMenuItem";
+            loadImageToolStripMenuItem.Size = new Size(61, 20);
+            loadImageToolStripMenuItem.Text = "Options";
             // 
-            // button2
+            // loadImageToolStripMenuItem1
             // 
-            button2.Location = new Point(134, 35);
-            button2.Name = "button2";
-            button2.Size = new Size(139, 29);
-            button2.TabIndex = 4;
-            button2.Text = "load background";
-            button2.UseVisualStyleBackColor = true;
-            button2.Click += btnLoadBackground_Click;
+            loadImageToolStripMenuItem1.Name = "loadImageToolStripMenuItem1";
+            loadImageToolStripMenuItem1.Size = new Size(180, 22);
+            loadImageToolStripMenuItem1.Text = "Load Image";
+            loadImageToolStripMenuItem1.Click += loadImageToolStripMenuItem_Click;
             // 
-            // menuStrip1
+            // saveImageToolStripMenuItem
             // 
-            menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { featuresToolStripMenuItem });
-            menuStrip1.Location = new Point(0, 0);
-            menuStrip1.Name = "menuStrip1";
-            menuStrip1.Padding = new Padding(6, 3, 0, 3);
-            menuStrip1.Size = new Size(1102, 30);
-            menuStrip1.TabIndex = 5;
-            menuStrip1.Text = "menuStrip1";
+            saveImageToolStripMenuItem.Name = "saveImageToolStripMenuItem";
+            saveImageToolStripMenuItem.Size = new Size(180, 22);
+            saveImageToolStripMenuItem.Text = "Save Image";
+            // 
+            // clearImageToolStripMenuItem
+            // 
+            clearImageToolStripMenuItem.Name = "clearImageToolStripMenuItem";
+            clearImageToolStripMenuItem.Size = new Size(180, 22);
+            clearImageToolStripMenuItem.Text = "Clear Image";
             // 
             // featuresToolStripMenuItem
             // 
             featuresToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { basicCopyToolStripMenuItem, greyscaleToolStripMenuItem, colorInversionToolStripMenuItem, histogramToolStripMenuItem, sepiaToolStripMenuItem });
             featuresToolStripMenuItem.Name = "featuresToolStripMenuItem";
-            featuresToolStripMenuItem.Size = new Size(78, 24);
+            featuresToolStripMenuItem.Size = new Size(63, 20);
             featuresToolStripMenuItem.Text = "Features";
             // 
             // basicCopyToolStripMenuItem
             // 
             basicCopyToolStripMenuItem.Name = "basicCopyToolStripMenuItem";
-            basicCopyToolStripMenuItem.Size = new Size(224, 26);
+            basicCopyToolStripMenuItem.Size = new Size(160, 22);
             basicCopyToolStripMenuItem.Text = "Basic Copy";
             basicCopyToolStripMenuItem.Click += basicCopyToolStripMenuItem_Click;
             // 
             // greyscaleToolStripMenuItem
             // 
             greyscaleToolStripMenuItem.Name = "greyscaleToolStripMenuItem";
-            greyscaleToolStripMenuItem.Size = new Size(224, 26);
+            greyscaleToolStripMenuItem.Size = new Size(160, 22);
             greyscaleToolStripMenuItem.Text = "Greyscale ";
             greyscaleToolStripMenuItem.Click += greyscaleToolStripMenuItem_Click;
             // 
             // colorInversionToolStripMenuItem
             // 
             colorInversionToolStripMenuItem.Name = "colorInversionToolStripMenuItem";
-            colorInversionToolStripMenuItem.Size = new Size(224, 26);
+            colorInversionToolStripMenuItem.Size = new Size(160, 22);
             colorInversionToolStripMenuItem.Text = "Color Inversion  ";
             colorInversionToolStripMenuItem.Click += colorInversionToolStripMenuItem_Click;
             // 
             // histogramToolStripMenuItem
             // 
             histogramToolStripMenuItem.Name = "histogramToolStripMenuItem";
-            histogramToolStripMenuItem.Size = new Size(224, 26);
+            histogramToolStripMenuItem.Size = new Size(160, 22);
             histogramToolStripMenuItem.Text = "Histogram ";
             histogramToolStripMenuItem.Click += histogramToolStripMenuItem_Click;
             // 
             // sepiaToolStripMenuItem
             // 
             sepiaToolStripMenuItem.Name = "sepiaToolStripMenuItem";
-            sepiaToolStripMenuItem.Size = new Size(224, 26);
+            sepiaToolStripMenuItem.Size = new Size(160, 22);
             sepiaToolStripMenuItem.Text = "Sepia  ";
             sepiaToolStripMenuItem.Click += sepiaToolStripMenuItem_Click;
             // 
+            // imageSubtractionToolStripMenuItem
+            // 
+            imageSubtractionToolStripMenuItem.Name = "imageSubtractionToolStripMenuItem";
+            imageSubtractionToolStripMenuItem.Size = new Size(116, 20);
+            imageSubtractionToolStripMenuItem.Text = "Image Subtraction";
+            imageSubtractionToolStripMenuItem.Click += imageSubtractionToolStripMenuItem_Click;
+            // 
+            // menuStrip1
+            // 
+            menuStrip1.ImageScalingSize = new Size(20, 20);
+            menuStrip1.Items.AddRange(new ToolStripItem[] { loadImageToolStripMenuItem, featuresToolStripMenuItem, imageSubtractionToolStripMenuItem });
+            menuStrip1.Location = new Point(0, 0);
+            menuStrip1.Name = "menuStrip1";
+            menuStrip1.Padding = new Padding(5, 2, 0, 2);
+            menuStrip1.Size = new Size(697, 24);
+            menuStrip1.TabIndex = 5;
+            menuStrip1.Text = "menuStrip1";
+            // 
+            // button1
+            // 
+            button1.Location = new Point(270, 371);
+            button1.Name = "button1";
+            button1.Size = new Size(155, 55);
+            button1.TabIndex = 6;
+            button1.Text = "Subtract";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += btnSubtract_Click;
+            // 
+            // loadBackgroundToolStripMenuItem
+            // 
+            loadBackgroundToolStripMenuItem.Name = "loadBackgroundToolStripMenuItem";
+            loadBackgroundToolStripMenuItem.Size = new Size(180, 22);
+            loadBackgroundToolStripMenuItem.Text = "Load Background";
+            loadBackgroundToolStripMenuItem.Click += btnLoadBackground_Click;
+            // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1102, 490);
-            Controls.Add(button2);
+            ClientSize = new Size(697, 367);
             Controls.Add(button1);
-            Controls.Add(pictureBox3);
             Controls.Add(pictureBox2);
             Controls.Add(pictureBox1);
             Controls.Add(menuStrip1);
+            Controls.Add(pictureBox3);
             MainMenuStrip = menuStrip1;
+            Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
-            Text = "Form1";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Villarazo Image Processing";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
@@ -174,14 +213,19 @@
         private PictureBox pictureBox1;
         private PictureBox pictureBox2;
         private PictureBox pictureBox3;
-        private Button button1;
-        private Button button2;
-        private MenuStrip menuStrip1;
+        private ToolStripMenuItem loadImageToolStripMenuItem;
+        private ToolStripMenuItem loadImageToolStripMenuItem1;
+        private ToolStripMenuItem saveImageToolStripMenuItem;
+        private ToolStripMenuItem clearImageToolStripMenuItem;
         private ToolStripMenuItem featuresToolStripMenuItem;
         private ToolStripMenuItem basicCopyToolStripMenuItem;
         private ToolStripMenuItem greyscaleToolStripMenuItem;
         private ToolStripMenuItem colorInversionToolStripMenuItem;
         private ToolStripMenuItem histogramToolStripMenuItem;
         private ToolStripMenuItem sepiaToolStripMenuItem;
+        private ToolStripMenuItem imageSubtractionToolStripMenuItem;
+        private MenuStrip menuStrip1;
+        private Button button1;
+        private ToolStripMenuItem loadBackgroundToolStripMenuItem;
     }
 }
