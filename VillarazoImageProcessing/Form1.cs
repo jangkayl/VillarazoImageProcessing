@@ -1,5 +1,6 @@
 ﻿using AForge.Video;
 using AForge.Video.DirectShow;
+using System.Diagnostics;
 
 namespace VillarazoImageProcessing
 {
@@ -7,9 +8,15 @@ namespace VillarazoImageProcessing
     {
         Bitmap imageA, imageB;
         bool isSubtractionMode = false;
+        private bool isLiveSubtraction = false;
 
         private FilterInfoCollection videoDevices;
         private VideoCaptureDevice videoSource;
+        private Stopwatch fpsTimer = new Stopwatch();
+        private int targetFPS = 10;
+        private int frameInterval => 10000 / targetFPS;
+
+        private readonly object imageALock = new object();
 
         public Form1()
         {
@@ -17,6 +24,9 @@ namespace VillarazoImageProcessing
             this.Size = new Size(713, 406);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
+            pictureBox3.Hide();
+
+            fpsTimer.Start();
         }
 
         private bool isNoImageA()
@@ -61,37 +71,127 @@ namespace VillarazoImageProcessing
 
         private void videoSource_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
+            if (this.IsDisposed) return;
+
+            if (fpsTimer.ElapsedMilliseconds < frameInterval)
+                return;
+
+            fpsTimer.Restart();
+
             Bitmap frame = (Bitmap)eventArgs.Frame.Clone();
+            Bitmap frameForDisplay = (Bitmap)frame.Clone();
+            Bitmap outputFrame = null;
 
-            pictureBox1.Image = frame;
-
-            imageA = (Bitmap)frame.Clone();
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            if (videoSource != null && videoSource.IsRunning)
+            if (isLiveSubtraction && imageB != null)
             {
-                videoSource.SignalToStop();
-                videoSource.WaitForStop();
+                Bitmap resizedBackground = new Bitmap(imageB, frame.Width, frame.Height);
+                outputFrame = new Bitmap(frame.Width, frame.Height);
+
+                for (int x = 0; x < frame.Width; x++)
+                {
+                    for (int y = 0; y < frame.Height; y++)
+                    {
+                        Color pixel = frame.GetPixel(x, y);
+                        float hue = pixel.GetHue();
+                        float sat = pixel.GetSaturation();
+                        float bri = pixel.GetBrightness();
+
+                        bool isGreen = (hue >= 40 && hue <= 180 && sat > 0.15 && bri > 0.15);
+
+                        outputFrame.SetPixel(x, y, isGreen ? resizedBackground.GetPixel(x, y) : pixel);
+                    }
+                }
+                resizedBackground.Dispose();
             }
+
+            if (pictureBox1.IsHandleCreated)
+            {
+                pictureBox1.Invoke((MethodInvoker)delegate
+                {
+                    pictureBox1.Image?.Dispose();
+                    pictureBox1.Image = frameForDisplay;
+                });
+            }
+
+            if (pictureBox3 != null && pictureBox3.IsHandleCreated && pictureBox3.Visible && outputFrame != null)
+            {
+                pictureBox3.Invoke((MethodInvoker)delegate
+                {
+                    pictureBox3.Image?.Dispose();
+                    pictureBox3.Image = outputFrame;
+                });
+            }
+
+            lock (imageALock)
+            {
+                imageA?.Dispose();
+                imageA = (Bitmap)frame.Clone();
+            }
+
+            frame.Dispose();
+        }
+        protected override async void OnFormClosing(FormClosingEventArgs e)
+        {
+            await StopCamera();
             base.OnFormClosing(e);
+
+            try
+            {
+                if (videoSource != null)
+                {
+                    videoSource.NewFrame -= videoSource_NewFrame;
+
+                    if (videoSource.IsRunning)
+                    {
+                        videoSource.SignalToStop();
+                        videoSource.WaitForStop();
+                    }
+
+                    videoSource = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Camera stop error: " + ex.Message);
+            }
         }
 
         private void loadImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (videoSource != null && videoSource.IsRunning)
+            try
             {
-                videoSource.SignalToStop();
-                videoSource.WaitForStop();
-                videoSource = null;
-            }
+                if (videoSource != null)
+                {
+                    videoSource.NewFrame -= videoSource_NewFrame;
 
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    if (videoSource.IsRunning)
+                    {
+                        videoSource.SignalToStop();
+
+                        Task.Run(() =>
+                        {
+                            videoSource.WaitForStop();
+                        });
+                    }
+                    videoSource = null;
+                }
+
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    if (imageA != null)
+                    {
+                        imageA.Dispose();
+                        imageA = null;
+                    }
+                    imageA = new Bitmap(openFileDialog.FileName);
+                    pictureBox1.Image = imageA;
+                }
+            }
+            catch (Exception ex)
             {
-                imageA = new Bitmap(openFileDialog.FileName);
-                pictureBox1.Image = imageA;
+                MessageBox.Show("Error loading image: " + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -105,13 +205,11 @@ namespace VillarazoImageProcessing
             }
         }
 
-        private void clearImageToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void clearImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (videoSource != null && videoSource.IsRunning)
             {
-                videoSource.SignalToStop();
-                videoSource.WaitForStop();
-                videoSource = null;
+                await StopCamera();
             }
 
             if (pictureBox1.Image != null)
@@ -130,8 +228,16 @@ namespace VillarazoImageProcessing
                 pictureBox3.Image = null;
             }
 
-            imageA = null;
-            imageB = null;
+            if (imageA != null)
+            {
+                imageA.Dispose();
+                imageA = null;
+            }
+            if (imageB != null)
+            {
+                imageB.Dispose();
+                imageB = null;
+            }
 
             isSubtractionMode = false;
 
@@ -142,18 +248,49 @@ namespace VillarazoImageProcessing
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private async Task StopCamera()
+        {
+            try
+            {
+                if (videoSource != null)
+                {
+                    videoSource.NewFrame -= videoSource_NewFrame;
+
+                    if (videoSource.IsRunning)
+                    {
+                        videoSource.SignalToStop();
+                        await Task.Run(() => videoSource.WaitForStop());
+                    }
+                    videoSource = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error stopping camera: " + ex.Message,
+                    "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
         private void basicCopyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (isNoImageA()) return;
-            imageB = new Bitmap(imageA);
+
+            Bitmap input = (Bitmap)imageA.Clone();
+
+            if (imageB != null) imageB.Dispose();
+            imageB = new Bitmap(input);
+
             pictureBox2.Image = imageB;
         }
 
         private void greyscaleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (isNoImageA()) return;
-            imageB = new Bitmap(imageA);
+
+            Bitmap input = (Bitmap)imageA.Clone();
+
+            if (imageB != null) imageB.Dispose();
+            imageB = new Bitmap(input);
 
             for (int x = 0; x < imageB.Width; x++)
             {
@@ -171,7 +308,11 @@ namespace VillarazoImageProcessing
         private void colorInversionToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (isNoImageA()) return;
-            imageB = new Bitmap(imageA);
+
+            Bitmap input = (Bitmap)imageA.Clone();
+
+            if (imageB != null) imageB.Dispose();
+            imageB = new Bitmap(input);
 
             for (int x = 0; x < imageB.Width; x++)
             {
@@ -190,11 +331,14 @@ namespace VillarazoImageProcessing
             if (isNoImageA()) return;
 
             int[] hist = new int[256];
-            for (int x = 0; x < imageA.Width; x++)
+
+            Bitmap input = (Bitmap)imageA.Clone();
+
+            for (int x = 0; x < input.Width; x++)
             {
-                for (int y = 0; y < imageA.Height; y++)
+                for (int y = 0; y < input.Height; y++)
                 {
-                    Color pixel = imageA.GetPixel(x, y);
+                    Color pixel = input.GetPixel(x, y);
                     int grey = (pixel.R + pixel.G + pixel.B) / 3;
                     hist[grey]++;
                 }
@@ -204,6 +348,7 @@ namespace VillarazoImageProcessing
             foreach (int val in hist)
                 if (val > max) max = val;
 
+            if (imageB != null) imageB.Dispose();
             imageB = new Bitmap(256, 200);
             using (Graphics g = Graphics.FromImage(imageB))
             {
@@ -220,13 +365,23 @@ namespace VillarazoImageProcessing
         private void sepiaToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (isNoImageA()) return;
-            imageB = new Bitmap(imageA);
 
-            for (int x = 0; x < imageA.Width; x++)
+            Bitmap input;
+            lock (imageALock)
             {
-                for (int y = 0; y < imageA.Height; y++)
+                input = (Bitmap)imageA.Clone();
+            }
+
+            Bitmap tempImageA = new Bitmap(input);
+
+            if (imageB != null) imageB.Dispose();
+            imageB = new Bitmap(tempImageA.Width, tempImageA.Height);
+
+            for (int x = 0; x < tempImageA.Width; x++)
+            {
+                for (int y = 0; y < tempImageA.Height; y++)
                 {
-                    Color pixel = imageA.GetPixel(x, y);
+                    Color pixel = tempImageA.GetPixel(x, y);
                     int tr = (int)(0.393 * pixel.R + 0.769 * pixel.G + 0.189 * pixel.B);
                     int tg = (int)(0.349 * pixel.R + 0.686 * pixel.G + 0.168 * pixel.B);
                     int tb = (int)(0.272 * pixel.R + 0.534 * pixel.G + 0.131 * pixel.B);
@@ -247,12 +402,14 @@ namespace VillarazoImageProcessing
             {
                 isSubtractionMode = true;
                 imageSubtractionToolStripMenuItem.Text = "Back to Features";
+                pictureBox3.Show();
                 this.Size = new Size(713, 815);
             }
             else
             {
                 isSubtractionMode = false;
                 imageSubtractionToolStripMenuItem.Text = "Image Subtraction";
+                pictureBox3.Hide();
                 this.Size = new Size(713, 406);
             }
         }
@@ -269,38 +426,49 @@ namespace VillarazoImageProcessing
                 return;
             }
 
+            isLiveSubtraction = true;
 
-            Bitmap resizedBackground = new Bitmap(imageB, imageA.Width, imageA.Height);
-            Bitmap resultImage = new Bitmap(imageA.Width, imageA.Height);
-            for (int x = 0; x < imageA.Width; x++)
+            if (imageA != null)
             {
-                for (int y = 0; y < imageA.Height; y++)
+                ProcessFrame(imageA);
+            }
+        }
+
+        private void ProcessFrame(Bitmap frame)
+        {
+            if (imageB == null) return;
+
+            Bitmap resizedBackground = new Bitmap(imageB, frame.Width, frame.Height);
+            Bitmap outputFrame = new Bitmap(frame.Width, frame.Height);
+
+            for (int x = 0; x < frame.Width; x++)
+            {
+                for (int y = 0; y < frame.Height; y++)
                 {
-                    Color pixel = imageA.GetPixel(x, y);
+                    Color pixel = frame.GetPixel(x, y);
+                    float hue = pixel.GetHue();
+                    float sat = pixel.GetSaturation();
+                    float bri = pixel.GetBrightness();
 
-                    // Convert RGB to Hue
-                    float hue = pixel.GetHue();        // 0–360
-                    float sat = pixel.GetSaturation(); // 0–1
-                    float bri = pixel.GetBrightness(); // 0–1
-
-                    //  Detect green (light or dark)
-                    bool isGreen =
-                        hue >= 50 && hue <= 160 &&   // Hue range for green
-                        sat > 0.2 &&                 // needs some saturation
-                        bri > 0.2;                   // not too dark
+                    bool isGreen = (hue >= 40 && hue <= 180 && sat > 0.15 && bri > 0.15);
 
                     if (isGreen)
-                    {
-                        resultImage.SetPixel(x, y, resizedBackground.GetPixel(x, y));
-                    }
+                        outputFrame.SetPixel(x, y, resizedBackground.GetPixel(x, y));
                     else
-                    {
-                        resultImage.SetPixel(x, y, pixel);
-                    }
+                        outputFrame.SetPixel(x, y, pixel);
                 }
             }
 
-            pictureBox3.Image = resultImage;
+            if (pictureBox3.IsHandleCreated)
+            {
+                pictureBox3.Invoke((MethodInvoker)delegate
+                {
+                    if (pictureBox3.Image != null) pictureBox3.Image.Dispose();
+                    pictureBox3.Image = outputFrame;
+                });
+            }
+
+            resizedBackground.Dispose();
         }
 
         private void processedImageToolStripMenuItem_Click(object sender, EventArgs e)
