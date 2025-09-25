@@ -1,6 +1,6 @@
-﻿using AForge.Video;
-using AForge.Video.DirectShow;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using WinFormsTimer = System.Windows.Forms.Timer;
+using WebCamLib;
 
 namespace VillarazoImageProcessing
 {
@@ -10,14 +10,15 @@ namespace VillarazoImageProcessing
         bool isSubtractionMode = false;
         private bool isLiveSubtraction = false;
 
-        private FilterInfoCollection videoDevices;
-        private VideoCaptureDevice videoSource;
+        private Device[] devices;            
+        private Device currentDevice;      
         private Stopwatch fpsTimer = new Stopwatch();
-        private int targetFPS = 10;
-        private int frameInterval => 10000 / targetFPS;
+        private int targetFPS = 1;
+        private int frameInterval => 1000 / targetFPS;
 
-        private readonly object imageALock = new object();
-
+        private readonly object imageALock = new object(); 
+        private WinFormsTimer frameGrabber;
+        
         public Form1()
         {
             InitializeComponent();
@@ -40,7 +41,6 @@ namespace VillarazoImageProcessing
                     MessageBoxIcon.Error);
                 return true;
             }
-
             return false;
         }
 
@@ -48,19 +48,21 @@ namespace VillarazoImageProcessing
         {
             try
             {
-                videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-
-                if (videoDevices.Count == 0)
+                devices = DeviceManager.GetAllDevices();
+                if (devices == null || devices.Length == 0)
                 {
                     MessageBox.Show("No camera found on this device!", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
-                videoSource.NewFrame += new NewFrameEventHandler(videoSource_NewFrame);
+                currentDevice = devices[0];
+                currentDevice.ShowWindow(pictureBox1); 
 
-                videoSource.Start();
+                frameGrabber = new WinFormsTimer();
+                frameGrabber.Interval = frameInterval;
+                frameGrabber.Tick += FrameGrabber_Tick;
+                frameGrabber.Start();
             }
             catch (Exception ex)
             {
@@ -69,112 +71,108 @@ namespace VillarazoImageProcessing
             }
         }
 
-        private void videoSource_NewFrame(object sender, NewFrameEventArgs eventArgs)
+        private void FrameGrabber_Tick(object sender, EventArgs e)
         {
-            if (this.IsDisposed) return;
-
-            if (fpsTimer.ElapsedMilliseconds < frameInterval)
-                return;
-
-            fpsTimer.Restart();
-
-            Bitmap frame = (Bitmap)eventArgs.Frame.Clone();
-            Bitmap frameForDisplay = (Bitmap)frame.Clone();
-            Bitmap outputFrame = null;
-
-            if (isLiveSubtraction && imageB != null)
-            {
-                Bitmap resizedBackground = new Bitmap(imageB, frame.Width, frame.Height);
-                outputFrame = new Bitmap(frame.Width, frame.Height);
-
-                for (int x = 0; x < frame.Width; x++)
-                {
-                    for (int y = 0; y < frame.Height; y++)
-                    {
-                        Color pixel = frame.GetPixel(x, y);
-                        float hue = pixel.GetHue();
-                        float sat = pixel.GetSaturation();
-                        float bri = pixel.GetBrightness();
-
-                        bool isGreen = (hue >= 40 && hue <= 180 && sat > 0.15 && bri > 0.15);
-
-                        outputFrame.SetPixel(x, y, isGreen ? resizedBackground.GetPixel(x, y) : pixel);
-                    }
-                }
-                resizedBackground.Dispose();
-            }
-
-            if (pictureBox1.IsHandleCreated)
-            {
-                pictureBox1.Invoke((MethodInvoker)delegate
-                {
-                    pictureBox1.Image?.Dispose();
-                    pictureBox1.Image = frameForDisplay;
-                });
-            }
-
-            if (pictureBox3 != null && pictureBox3.IsHandleCreated && pictureBox3.Visible && outputFrame != null)
-            {
-                pictureBox3.Invoke((MethodInvoker)delegate
-                {
-                    pictureBox3.Image?.Dispose();
-                    pictureBox3.Image = outputFrame;
-                });
-            }
-
-            lock (imageALock)
-            {
-                imageA?.Dispose();
-                imageA = (Bitmap)frame.Clone();
-            }
-
-            frame.Dispose();
-        }
-        protected override async void OnFormClosing(FormClosingEventArgs e)
-        {
-            await StopCamera();
-            base.OnFormClosing(e);
-
             try
             {
-                if (videoSource != null)
+                currentDevice.Sendmessage();
+                if (Clipboard.ContainsImage())
                 {
-                    videoSource.NewFrame -= videoSource_NewFrame;
-
-                    if (videoSource.IsRunning)
+                    using (Bitmap frame = new Bitmap(Clipboard.GetImage()))
                     {
-                        videoSource.SignalToStop();
-                        videoSource.WaitForStop();
-                    }
+                        if (frame == null) return;
 
-                    videoSource = null;
+                        Bitmap frameForDisplay = (Bitmap)frame.Clone();
+                        Bitmap outputFrame = null;
+
+                        if (isLiveSubtraction && imageB != null)
+                        {
+                            Bitmap resizedBackground = new Bitmap(imageB, frame.Width, frame.Height);
+                            outputFrame = new Bitmap(frame.Width, frame.Height);
+
+                            for (int x = 0; x < frame.Width; x++)
+                            {
+                                for (int y = 0; y < frame.Height; y++)
+                                {
+                                    Color pixel = frame.GetPixel(x, y);
+                                    float hue = pixel.GetHue();
+                                    float sat = pixel.GetSaturation();
+                                    float bri = pixel.GetBrightness();
+
+                                    bool isGreen = (hue >= 40 && hue <= 180 && sat > 0.15 && bri > 0.15);
+                                    outputFrame.SetPixel(x, y, isGreen ? resizedBackground.GetPixel(x, y) : pixel);
+                                }
+                            }
+                            resizedBackground.Dispose();
+                        }
+
+                        if (pictureBox1.IsHandleCreated)
+                        {
+                            pictureBox1.Invoke((MethodInvoker)delegate
+                            {
+                                pictureBox1.Image?.Dispose();
+                                pictureBox1.Image = (Bitmap)frameForDisplay.Clone();
+                            });
+                        }
+
+                        if (pictureBox3 != null && pictureBox3.IsHandleCreated && pictureBox3.Visible && outputFrame != null)
+                        {
+                            pictureBox3.Invoke((MethodInvoker)delegate
+                            {
+                                pictureBox3.Image?.Dispose();
+                                pictureBox3.Image = outputFrame;
+                            });
+                        }
+
+                        lock (imageALock)
+                        {
+                            imageA?.Dispose();
+                            imageA = (Bitmap)frame.Clone();
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Camera stop error: " + ex.Message);
+                Debug.WriteLine("Frame grab error: " + ex.Message);
             }
         }
 
-        private void loadImageToolStripMenuItem_Click(object sender, EventArgs e)
+        protected override async void OnFormClosing(FormClosingEventArgs e)
+        {
+            await StopCamera();
+            base.OnFormClosing(e);
+        }
+
+        private async Task StopCamera()
         {
             try
             {
-                if (videoSource != null)
+                if (frameGrabber != null)
                 {
-                    videoSource.NewFrame -= videoSource_NewFrame;
-
-                    if (videoSource.IsRunning)
-                    {
-                        videoSource.SignalToStop();
-
-                        Task.Run(() =>
-                        {
-                            videoSource.WaitForStop();
-                        });
-                    }
-                    videoSource = null;
+                    frameGrabber.Stop();
+                    frameGrabber.Dispose();
+                    frameGrabber = null;
                 }
+
+                if (currentDevice != null)
+                {
+                    currentDevice.Stop();
+                    currentDevice = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error stopping camera: " + ex.Message,
+                    "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void loadImageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                await StopCamera();
 
                 OpenFileDialog openFileDialog = new OpenFileDialog();
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -207,7 +205,7 @@ namespace VillarazoImageProcessing
 
         private async void clearImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (videoSource != null && videoSource.IsRunning)
+            if (currentDevice != null)
             {
                 await StopCamera();
             }
@@ -246,29 +244,6 @@ namespace VillarazoImageProcessing
 
             MessageBox.Show("All images cleared.", "Clear",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        private async Task StopCamera()
-        {
-            try
-            {
-                if (videoSource != null)
-                {
-                    videoSource.NewFrame -= videoSource_NewFrame;
-
-                    if (videoSource.IsRunning)
-                    {
-                        videoSource.SignalToStop();
-                        await Task.Run(() => videoSource.WaitForStop());
-                    }
-                    videoSource = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error stopping camera: " + ex.Message,
-                    "Camera Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
         }
 
         private void basicCopyToolStripMenuItem_Click(object sender, EventArgs e)
