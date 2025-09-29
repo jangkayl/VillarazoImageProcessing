@@ -10,15 +10,15 @@ namespace VillarazoImageProcessing
         bool isSubtractionMode = false;
         private bool isLiveSubtraction = false;
 
-        private Device[] devices;            
-        private Device currentDevice;      
+        private Device[] devices;
+        private Device currentDevice;
         private Stopwatch fpsTimer = new Stopwatch();
         private int targetFPS = 1;
         private int frameInterval => 1000 / targetFPS;
 
-        private readonly object imageALock = new object(); 
+        private readonly object imageALock = new object();
         private WinFormsTimer frameGrabber;
-        
+
         public Form1()
         {
             InitializeComponent();
@@ -57,7 +57,7 @@ namespace VillarazoImageProcessing
                 }
 
                 currentDevice = devices[0];
-                currentDevice.ShowWindow(pictureBox1); 
+                currentDevice.ShowWindow(pictureBox1);
 
                 frameGrabber = new WinFormsTimer();
                 frameGrabber.Interval = frameInterval;
@@ -481,5 +481,52 @@ namespace VillarazoImageProcessing
                 pictureBox3.Image.Save(saveFileDialog.FileName);
             }
         }
+        private enum ImageFilter
+        {
+            Smooth,
+            Sharpen,
+            GaussianBlur,
+            MeanRemoval,
+            Emboss
+        }
+
+        private void ApplyFilter(ImageFilter filter)
+        {
+            if (isNoImageA()) return;
+
+            Bitmap input = (Bitmap)imageA.Clone();
+
+            if (imageB != null) imageB.Dispose();
+
+            Bitmap bmp = (Bitmap)input.Clone();
+
+            switch (filter)
+            {
+                case ImageFilter.Smooth:
+                    BitmapFilter.Smooth(bmp);
+                    break;
+                case ImageFilter.Sharpen:
+                    BitmapFilter.Sharpen(bmp);
+                    break;
+                case ImageFilter.GaussianBlur:
+                    BitmapFilter.GaussianBlur(bmp);
+                    break;
+                case ImageFilter.MeanRemoval:
+                    BitmapFilter.MeanRemoval(bmp);
+                    break;
+                case ImageFilter.Emboss:
+                    BitmapFilter.Emboss(bmp);
+                    break;
+            }
+
+            imageB = bmp;
+            pictureBox2.Image = imageB;
+        }
+
+        private void btnSmooth_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.Smooth);
+        private void btnSharpen_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.Sharpen);
+        private void btnGaussian_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.GaussianBlur);
+        private void btnMeanRemoval_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.MeanRemoval);
+        private void btnEmboss_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.Emboss);
     }
 }
