@@ -53,6 +53,12 @@
             sharpenToolStripMenuItem = new ToolStripMenuItem();
             meanRemovalToolStripMenuItem = new ToolStripMenuItem();
             embossToolStripMenuItem = new ToolStripMenuItem();
+            laplacianToolStripMenuItem = new ToolStripMenuItem();
+            allDirectionsToolStripMenuItem = new ToolStripMenuItem();
+            horizontalVerticalToolStripMenuItem = new ToolStripMenuItem();
+            lossyToolStripMenuItem = new ToolStripMenuItem();
+            horizontalOnlyToolStripMenuItem = new ToolStripMenuItem();
+            verticalOnlyToolStripMenuItem = new ToolStripMenuItem();
             button1 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
@@ -247,10 +253,52 @@
             // 
             // embossToolStripMenuItem
             // 
+            embossToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { laplacianToolStripMenuItem, allDirectionsToolStripMenuItem, horizontalVerticalToolStripMenuItem, lossyToolStripMenuItem, horizontalOnlyToolStripMenuItem, verticalOnlyToolStripMenuItem });
             embossToolStripMenuItem.Name = "embossToolStripMenuItem";
             embossToolStripMenuItem.Size = new Size(180, 22);
             embossToolStripMenuItem.Text = "Emboss";
-            embossToolStripMenuItem.Click += btnEmboss_Click;
+            // 
+            // laplacianToolStripMenuItem
+            // 
+            laplacianToolStripMenuItem.Name = "laplacianToolStripMenuItem";
+            laplacianToolStripMenuItem.Size = new Size(180, 22);
+            laplacianToolStripMenuItem.Text = "Laplacian";
+            laplacianToolStripMenuItem.Click += btnEmbossLaplacian_Click;
+            // 
+            // allDirectionsToolStripMenuItem
+            // 
+            allDirectionsToolStripMenuItem.Name = "allDirectionsToolStripMenuItem";
+            allDirectionsToolStripMenuItem.Size = new Size(180, 22);
+            allDirectionsToolStripMenuItem.Text = "All Directions";
+            allDirectionsToolStripMenuItem.Click += btnEmbossAllDirection_Click;
+            // 
+            // horizontalVerticalToolStripMenuItem
+            // 
+            horizontalVerticalToolStripMenuItem.Name = "horizontalVerticalToolStripMenuItem";
+            horizontalVerticalToolStripMenuItem.Size = new Size(180, 22);
+            horizontalVerticalToolStripMenuItem.Text = "Horizontal/Vertical";
+            horizontalVerticalToolStripMenuItem.Click += btnEmbossHoriVert;
+            // 
+            // lossyToolStripMenuItem
+            // 
+            lossyToolStripMenuItem.Name = "lossyToolStripMenuItem";
+            lossyToolStripMenuItem.Size = new Size(180, 22);
+            lossyToolStripMenuItem.Text = "Lossy";
+            lossyToolStripMenuItem.Click += btnEmbossLossy_Click;
+            // 
+            // horizontalOnlyToolStripMenuItem
+            // 
+            horizontalOnlyToolStripMenuItem.Name = "horizontalOnlyToolStripMenuItem";
+            horizontalOnlyToolStripMenuItem.Size = new Size(180, 22);
+            horizontalOnlyToolStripMenuItem.Text = "Horizontal Only";
+            horizontalOnlyToolStripMenuItem.Click += btnEmbossHori_Click;
+            // 
+            // verticalOnlyToolStripMenuItem
+            // 
+            verticalOnlyToolStripMenuItem.Name = "verticalOnlyToolStripMenuItem";
+            verticalOnlyToolStripMenuItem.Size = new Size(180, 22);
+            verticalOnlyToolStripMenuItem.Text = "Vertical Only ";
+            verticalOnlyToolStripMenuItem.Click += btnEmbossVert_Click;
             // 
             // button1
             // 
@@ -314,5 +362,11 @@
         private ToolStripMenuItem sharpenToolStripMenuItem;
         private ToolStripMenuItem meanRemovalToolStripMenuItem;
         private ToolStripMenuItem embossToolStripMenuItem;
+        private ToolStripMenuItem laplacianToolStripMenuItem;
+        private ToolStripMenuItem allDirectionsToolStripMenuItem;
+        private ToolStripMenuItem horizontalVerticalToolStripMenuItem;
+        private ToolStripMenuItem lossyToolStripMenuItem;
+        private ToolStripMenuItem horizontalOnlyToolStripMenuItem;
+        private ToolStripMenuItem verticalOnlyToolStripMenuItem;
     }
 }

@@ -153,7 +153,7 @@ namespace VillarazoImageProcessing
             return Conv3x3(b, m);
         }
 
-        public static bool Emboss(Bitmap b)
+        public static bool EmbossLaplacian(Bitmap b)
         {
             ConvMatrix m = new ConvMatrix();
             m.TopLeft = -1; m.TopRight = -1; m.MidLeft = 0; m.Pixel = 4; m.MidRight = 0; m.BottomLeft = -1; m.BottomRight = -1;
@@ -173,6 +173,20 @@ namespace VillarazoImageProcessing
             return Conv3x3(b, m);
         }
 
+        public static bool EmbossHorzVert(Bitmap b)
+        {
+            ConvMatrix m = new ConvMatrix();
+            m.SetAll(0);
+            m.TopMid = -1;
+            m.MidLeft = -1;
+            m.Pixel = 4;
+            m.MidRight = -1;
+            m.BottomMid = -1;
+            m.Factor = 1;
+            m.Offset = 127;
+            return Conv3x3(b, m);
+        }
+
         public static bool EmbossHorizontal(Bitmap b)
         {
             ConvMatrix m = new ConvMatrix();
@@ -186,6 +200,17 @@ namespace VillarazoImageProcessing
         {
             ConvMatrix m = new ConvMatrix();
             m.TopMid = -1; m.BottomMid = 1;
+            m.Factor = 1;
+            m.Offset = 127;
+            return Conv3x3(b, m);
+        }
+
+        public static bool EmbossLossy(Bitmap b)
+        {
+            ConvMatrix m = new ConvMatrix();
+            m.TopLeft = 1; m.TopMid = -2; m.TopRight = 1;
+            m.MidLeft = -2; m.Pixel = 4; m.MidRight = -2;
+            m.BottomLeft = -2; m.BottomMid = 1; m.BottomRight = -2;
             m.Factor = 1;
             m.Offset = 127;
             return Conv3x3(b, m);

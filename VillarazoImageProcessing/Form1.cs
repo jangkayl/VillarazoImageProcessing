@@ -487,7 +487,12 @@ namespace VillarazoImageProcessing
             Sharpen,
             GaussianBlur,
             MeanRemoval,
-            Emboss
+            EmbossLaplacian,
+            EmbossAllDirection,
+            EmbossHoriVert,
+            EmbossHori,
+            EmbossVert,
+            EmbossLossy
         }
 
         private void ApplyFilter(ImageFilter filter)
@@ -514,8 +519,23 @@ namespace VillarazoImageProcessing
                 case ImageFilter.MeanRemoval:
                     BitmapFilter.MeanRemoval(bmp);
                     break;
-                case ImageFilter.Emboss:
-                    BitmapFilter.Emboss(bmp);
+                case ImageFilter.EmbossLaplacian:
+                    BitmapFilter.EmbossLaplacian(bmp);
+                    break;
+                case ImageFilter.EmbossAllDirection:
+                    BitmapFilter.EmbossAllDirections(bmp);
+                    break;
+                case ImageFilter.EmbossHoriVert:
+                    BitmapFilter.EmbossHorzVert(bmp);
+                    break;
+                case ImageFilter.EmbossHori:
+                    BitmapFilter.EmbossHorizontal(bmp);
+                    break;
+                case ImageFilter.EmbossVert:
+                    BitmapFilter.EmbossVertical(bmp);
+                    break;
+                case ImageFilter.EmbossLossy:
+                    BitmapFilter.EmbossLossy(bmp);
                     break;
             }
 
@@ -527,6 +547,11 @@ namespace VillarazoImageProcessing
         private void btnSharpen_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.Sharpen);
         private void btnGaussian_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.GaussianBlur);
         private void btnMeanRemoval_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.MeanRemoval);
-        private void btnEmboss_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.Emboss);
+        private void btnEmbossLaplacian_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossLaplacian);
+        private void btnEmbossAllDirection_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossAllDirection);
+        private void btnEmbossHoriVert(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossHoriVert);
+        private void btnEmbossHori_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossHori);
+        private void btnEmbossVert_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossVert);
+        private void btnEmbossLossy_Click(object sender, EventArgs e) => ApplyFilter(ImageFilter.EmbossLossy);
     }
 }
